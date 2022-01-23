@@ -23,9 +23,7 @@ GLuint loadTexture(const char* texImagePath) {
 	textureID = SOIL_load_OGL_texture(texImagePath,
 		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
 	if (textureID == 0) cout << "could not find texture file" << texImagePath << endl;
-	//mip mapping
-	glBindTexture(GL_TEXTURE_2D, textureID);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	//mip mapping	
 	glGenerateMipmap(GL_TEXTURE_2D);
 	//anisotropic filtering
 	if(glewIsSupported("GL_EXT_texture_filter_anisotropic"))

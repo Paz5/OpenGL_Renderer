@@ -1,13 +1,18 @@
 #version 430
 out vec4 FragColor;
 
-uniform vec3 sunPos;
+struct Material{
+
+	float shininess;
+};
+
+uniform Material material;
+
+uniform vec3 sunDir;
 uniform vec3 sunColor;
 uniform vec3 ambientColor;
 uniform vec3 albedo;
 uniform vec3 viewPos;
-
-layout(binding = 0) uniform sampler2D samp;
 
 in vec2 uv;
 in vec3 objectNormal;
@@ -15,21 +20,24 @@ in vec3 fragPos;
 
 float specularIntensity = 0.8;
 
+uniform layout(binding=0) sampler2D diffuse;
+uniform layout(binding=1) sampler2D specular;
+
+
 void main(void)
 { 
 //ambient
-	vec3 ambient = ambientColor * albedo;
+	vec3 ambient = ambientColor * texture(diffuse,uv).rgb;
 
 //diffuse
 	vec3 norm = normalize(objectNormal);
-	vec3 lightDir = normalize(sunPos - fragPos);
-	vec3 diffuse = sunColor * max(dot(norm,lightDir),0.0);
+	vec3 diffuse = sunColor * max(dot(norm,-sunDir),0.0) * texture(diffuse,uv).rgb;
 //specular
 	vec3 viewDir = normalize(viewPos - fragPos);
-	vec3 reflectDir = reflect(-lightDir,norm);
-	float spec = pow(max(dot(viewDir,reflectDir),0.0),64);
-	vec3 specular = sunColor * specularIntensity * spec;
+	vec3 reflectDir = reflect(sunDir,norm);
+	float spec = pow(max(dot(viewDir,reflectDir),0.0),material.shininess);
+	vec3 specular = sunColor * specularIntensity * spec * texture(specular,uv).rgb;;
 
 	vec3 color = (diffuse + specular + ambient) * albedo;
-	FragColor = vec4(diffuse + specular + ambient,1.0);
+	FragColor = vec4(color,1.0);
 }

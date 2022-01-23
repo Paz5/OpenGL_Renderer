@@ -1,4 +1,5 @@
 #include "Shader.h"
+#include "Material.h"
 
 string Shader::ReadShaderSource(const char* filePath) {
 	string content;
@@ -96,6 +97,11 @@ void Shader::Use() {
 	glUseProgram(shaderProgram);
 }
 
+void Shader::SetInt(const char* uniformName, int value) {
+	GLuint loc = glGetUniformLocation(shaderProgram, uniformName);
+	glUniform1i(loc, value);
+}
+
 void Shader::SetFloat(const char* uniformName, float value) {
 	GLuint loc = glGetUniformLocation(shaderProgram, uniformName);
 	glUniform1f(loc, value);
@@ -114,4 +120,8 @@ void Shader::SetMatrix4f(const char* uniformName, glm::mat4 value) {
 void Shader::SetMatrix3f(const char* uniformName, glm::mat3 value) {
 	GLuint loc = glGetUniformLocation(shaderProgram, uniformName);
 	glUniformMatrix3fv(loc, 1, GL_FALSE, glm::value_ptr(value));
+}
+
+void Shader::SetMaterial(Material value) {
+	SetFloat("material.shininess", value.shininess);
 }

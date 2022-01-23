@@ -28,7 +28,7 @@ using namespace std;
 #define numVAOs 1
 #define numVBOs 1
 glm::vec3 cubePos = glm::vec3(0.0f);
-glm::vec3 sunPos = glm::vec3(0.0f, 2.2f, 0.0f);
+glm::vec3 sunDirection = glm::vec3(0.0f, -1.0f, 0.0f);
 glm::vec3 sunColor = glm::vec3(1.0f, 1.0f, 1.0f);
 glm::vec3 ambientColor = glm::vec3(0.03f, 0.02f, 0.09f);
 GLuint vao[numVAOs];
@@ -36,7 +36,12 @@ GLuint vbo[numVBOs];
 GLuint mainTex;
 
 Shader defaultShader;
-Shader sunShader;
+Material defaultMaterial{
+	0,
+	1,
+	32.0f
+};
+
 Camera mainCamera;
 
 // allocate variables used in display() function, so that they won’t need to be allocated during rendering
@@ -49,47 +54,48 @@ float timeFactor;
 
 void setupVertices(void) { // 36 vertices, 12 triangles, makes 2x2x2 cube placed at origin
 	float vertices[] = {
-		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		// positions          // normals           // texture coords
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
 
-		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
 
-		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
 
-		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
 	};
 
 	glGenVertexArrays(numVAOs, vao);
@@ -97,6 +103,13 @@ void setupVertices(void) { // 36 vertices, 12 triangles, makes 2x2x2 cube placed
 	glGenBuffers(numVBOs, vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), 0);//send positions to shader
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));//send normals to shader
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));//send uvs to shader
+	glEnableVertexAttribArray(2);
 }
 
 void WindowResizeCallback(GLFWwindow* window, int newWidth, int newHeight)
@@ -160,9 +173,14 @@ void init(GLFWwindow* window) {
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 430");
 
+	defaultMaterial.diffuseTex = loadTexture("textures/container2.png");
+	defaultMaterial.specularTex = loadTexture("textures/container2_specular.png");
+
 	defaultShader.Compile("vertShader.glsl", "fragShader.glsl");
-	sunShader.Compile("lightVert.glsl", "lightFrag.glsl");
-	mainTex = loadTexture("textures/flowmaptexttex.png");
+	defaultShader.Use();
+	defaultShader.SetFloat3("albedo", glm::vec3(1.0f, 1.0f, 1.0f));
+	defaultShader.SetMaterial(defaultMaterial);
+	defaultShader.SetInt("material.diffuse", defaultMaterial.diffuseTex);
 
 	//calculate the perspective matrix
 	glfwGetFramebufferSize(window, &width, &height);
@@ -174,9 +192,19 @@ void ImGuiDisplay() {
 	ImGui::Begin("Properties");
 	ImGuiColorEditFlags flags = 0;
 	flags |= ImGuiColorEditFlags_NoInputs;
+	ImGui::Text("Environment");
 	ImGui::ColorEdit3("Ambient color", (float*)&ambientColor, flags);
 	ImGui::ColorEdit3("Sun color", (float*)&sunColor, flags);
-	ImGui::DragFloat3("Sun position", (float*)&sunPos,0.1f);
+	ImGui::DragFloat3("Sun direction", (float*)&sunDirection,0.1f,-1.0f,1.0f);
+
+	ImGui::Text("Cube material");
+	ImGui::DragFloat("shininess", (float*)&defaultMaterial.shininess, 0.1f, 1.0f, 128.0f);
+	//defaultShader.SetMaterial(defaultMaterial);
+	
+	ImGui::Text("Diffuse texture");
+	ImGui::Image((void*)(intptr_t)defaultMaterial.diffuseTex,ImVec2(256,256));
+	ImGui::Text("Specular texture");
+	ImGui::Image((void*)(intptr_t)defaultMaterial.specularTex, ImVec2(256, 256));
 	ImGui::End();
 }
 
@@ -207,41 +235,27 @@ void display(GLFWwindow* window, double currentTime) {
 	//uniforms
 	defaultShader.SetMatrix4f("proj_matrix", pMat);
 	defaultShader.SetMatrix4f("v_matrix", mainCamera.view_matrix);
-	defaultShader.SetFloat3("sunPos", sunPos);
+	defaultShader.SetFloat3("sunDir", glm::normalize(sunDirection));
+	defaultShader.SetFloat3("viewPos", mainCamera.position);
 	defaultShader.SetFloat3("sunColor", sunColor);
 	defaultShader.SetFloat3("ambientColor", ambientColor);
-	defaultShader.SetFloat3("viewPos", mainCamera.position);
-	defaultShader.SetFloat3("albedo", glm::vec3(1.0f,1.0f,1.0f));
+
+	defaultShader.SetMaterial(defaultMaterial);
 
 	//transforms
 	mMat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-	mMat = glm::rotate(mMat, (float)currentTime, glm::vec3(0.7f, 1.0f, 0.0f));//apply cube rotation
+	//mMat = glm::rotate(mMat, (float)currentTime, glm::vec3(0.7f, 1.0f, 0.0f));//apply cube rotation
 
 	defaultShader.SetMatrix4f("m_matrix", mMat);	
 	nMat = glm::mat3(glm::transpose(glm::inverse(mMat)));
 	defaultShader.SetMatrix3f("n_matrix", nMat);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);//send positions to shader
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));//bind normals to shader
-	glEnableVertexAttribArray(1);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, defaultMaterial.diffuseTex);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, defaultMaterial.specularTex);
+	glBindVertexArray(vao[0]);
 	glDrawArrays(GL_TRIANGLES, 0, 36);//draw cube
-
-	// sun 	
-	sunShader.Use();
-
-	sunShader.SetMatrix4f("proj_matrix", pMat);
-	sunShader.SetMatrix4f("v_matrix", mainCamera.view_matrix);
-
-	//transforms
-	sunShader.SetFloat3("sunColor", glm::vec3(1.f, 1.f, 1.f));
-	mMat = glm::translate(glm::mat4(1.0f), sunPos);
-	sunShader.SetMatrix4f("m_matrix", mMat);
-	sunShader.SetFloat3("sunColor", sunColor);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);//bind positions to shader
-	glEnableVertexAttribArray(0);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
 
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
@@ -261,10 +275,13 @@ int main(void) {    // main() is unchanged from before
 	glfwSetScrollCallback(window, scroll_callback);
 
 	init(window);
+	bool firstFrame = true;
+
 	while (!glfwWindowShouldClose(window)) {
 
 		display(window, glfwGetTime());
 		glfwSwapBuffers(window);
+		glClearColor(ambientColor.x * 0.8f, ambientColor.y * 0.8f, ambientColor.z * 0.8f, 1.0f);
 		glfwPollEvents();
 	}
 

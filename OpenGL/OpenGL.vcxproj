@@ -176,11 +176,14 @@
     <ClInclude Include="imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="Material.h" />
     <ClInclude Include="primitives.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="textures\container2.png" />
+    <Image Include="textures\container2_specular.png" />
     <Image Include="textures\flowmaptexttex.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
